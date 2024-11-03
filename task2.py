@@ -2,8 +2,9 @@ import pickle
 import numpy as np
 import time
 import matplotlib.pyplot as plt
-from scipy.cluster.hierarchy import dendrogram
+from scipy.cluster.hierarchy import dendrogram, fcluster
 from matplotlib.collections import LineCollection
+from sklearn.metrics import silhouette_score
 import os
 
 # 打开.pkl文件并加载数据
@@ -154,13 +155,49 @@ def plot_dendrogram(linkage_info, title, filename, save_dir = "task2"):
     plt.savefig(os.path.join(save_dir, filename))
     plt.close()
 
+def save_linkage_info(linkage_info, filename, save_dir = "task2"):
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    Z = np.array(linkage_info)
+    np.save(os.path.join(save_dir, filename), Z)
+
+def plot_silhouette_scores(X, linkage_info, title, filename, save_dir = "task2"):
+    X = X.reshape(X.shape[0], -1)
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    Z = np.array(linkage_info)
+    # 评估不同聚类数量下的轮廓系数
+    silhouette_scores = []
+    max_clusters = 60  # 最大聚类数量
+
+    for n_clusters in range(2, max_clusters + 1):
+        # 从链接矩阵中提取聚类标签
+        labels = fcluster(Z, n_clusters, criterion='maxclust')
+        
+        # 计算轮廓系数
+        score = silhouette_score(X, labels)
+        silhouette_scores.append(score)
+        print(f"Number of clusters: {n_clusters}, Silhouette Score: {score:.4f}")
+
+    # 绘制轮廓系数随聚类数量的变化图
+    plt.figure(figsize=(10, 5))
+    plt.plot(range(2, max_clusters + 1), silhouette_scores, marker='o')
+    plt.title(title)
+    plt.xlabel("Number of Clusters")
+    plt.ylabel("Silhouette Score")
+    plt.savefig(os.path.join(save_dir, filename))
+    plt.close()
+
+
+
 # 生成示例数据
 np.random.seed(1)  # 为了结果可重复
-data = images[0:200, :, :, :]  # 示例数据，实际应替换为你的数据
+data = images
 
 # 设置不同的链接方法
-methods = ['single', 'complete', 'average']
-
+# methods = ['single', 'complete', 'average']
+# methods = ['complete', 'average']
+methods = ['average']
 # 实验每种链接方法
 for method in methods:
     start_time = time.time()
@@ -170,6 +207,12 @@ for method in methods:
     elapsed_time = end_time - start_time
     print(f"方法: {method}")
     print(f"  计算时间: {elapsed_time:.4f} 秒")
+    text = f"方法: {method}     计算时间: {elapsed_time:.4f} 秒"
+    save_dir = "task2"
+    with open(os.path.join(save_dir, f"{method.capitalize()} Calculate time.txt"), 'w') as file:
+        file.write(text)
     
     # 绘制从 1 簇到 100 簇的树状图
-    plot_dendrogram(linkage_info, f"{method.capitalize()} Linkage Dendrogram (1 to 100 clusters)", f"{method.capitalize()} Linkage Dendrogram (1 to 100 clusters).png")
+    plot_dendrogram(linkage_info, f"{method.capitalize()} Linkage Dendrogram (1 to 100 clusters)", f"{method.capitalize()} Linkage Dendrogram (1 to 100 clusters).png", save_dir = save_dir)
+    save_linkage_info(linkage_info, f"{method.capitalize()} Linkage Info", save_dir = save_dir)
+    plot_silhouette_scores(data, linkage_info, f"{method.capitalize()} Silhouette Score vs Number of Clusters", f"{method.capitalize()} Silhouette Score vs Number of Clusters.png", save_dir = save_dir)

@@ -67,5 +67,88 @@ def k_means(X, K, max_iters=100):
 
 ![K_50_all_inits](/Users/wangyifeng/Desktop/学习/人工智能基础算法/hw/hw4/Homework4/task1/K_50_all_inits.png)
 
-## 3
+## 4
 
+实现了分级聚类算法，并以三种簇与簇之间距离定义（Single Link，Complete Link和Average Link） 作为用户可选项。程序中进行分级聚类的核心函数`hierarchical_clustering`代码如下
+
+```python
+def hierarchical_clustering(X, method='single', num_clusters=1):
+    # 将数据展平为二维数组 (3000, 784)
+    start_time_1 = time.time()
+    X = X.reshape(X.shape[0], -1)
+    
+    n = X.shape[0]
+    clusters = [[i] for i in range(n)]
+    clusters_num = [i for i in range(n)]
+    num = n
+    distances = compute_distance_matrix(X)
+    
+    linkage_info = []
+    
+    while len(clusters) > num_clusters:
+        min_dist = np.inf
+        merge_i, merge_j = None, None
+        
+        for i in range(len(clusters)):
+            for j in range(i + 1, len(clusters)):
+                if method == 'single':
+                    dist = single_linkage(distances, clusters[i], clusters[j])
+                elif method == 'complete':
+                    dist = complete_linkage(distances, clusters[i], clusters[j])
+                elif method == 'average':
+                    dist = average_linkage(distances, clusters[i], clusters[j])
+                
+                if dist < min_dist:
+                    min_dist = dist
+                    merge_i, merge_j = i, j
+        
+        # 合并最近的两个簇
+        new_cluster = clusters[merge_i] + clusters[merge_j]
+        del clusters[merge_j]
+        del clusters[merge_i]
+        
+        
+        # 更新距离矩阵
+        for k in range(len(clusters)):
+            if k != merge_i and k != merge_j:
+                if method == 'single':
+                    new_dist = single_linkage(distances, new_cluster, clusters[k])
+                elif method == 'complete':
+                    new_dist = complete_linkage(distances, new_cluster, clusters[k])
+                elif method == 'average':
+                    new_dist = average_linkage(distances, new_cluster, clusters[k])
+                
+                distances[clusters[k][0], new_cluster[0]] = new_dist
+                distances[new_cluster[0], clusters[k][0]] = new_dist
+        
+        # 记录合并信息
+        linkage_info.append((clusters_num[merge_i], clusters_num[merge_j], min_dist, len(new_cluster)))
+        del clusters_num[merge_j]
+        del clusters_num[merge_i]
+        
+        # 添加新簇
+        clusters.append(new_cluster)
+        clusters_num.append(num)
+        num += 1
+        end_time_1 = time.time()
+        print(f"{method}：完成{(num - n) / n * 100:2f}% {num - n}/{n}，已花费: {end_time_1 - start_time_1:.4f} 秒")
+    return linkage_info
+```
+
+函数首先将每个样本单独作为一个簇，计算出各个簇之间的距离，储存在一个二维矩阵中，之后进行簇合并，每次删除原有的两个簇，并添加一个新簇，再更新距离矩阵，同时用一个伴随的数组来记录每个簇的序号，用于后续绘制树状图。函数将记录合并过程的数组`linkage_info`返回，用于绘制树状图。
+
+## 5
+
+在给定规模为3000的数据集上依次进行了Single Link，Complete Link和Average Link的计算，计算时间如下所示
+
+|            | Single Link | Complete Link | Average Link |
+| :--------: | :---------: | :-----------: | :----------: |
+| 计算时间/s |   6220.41   |    6741.62    |   7471.46    |
+
+三中距离定义对应的树状图（只画出从1簇到100簇）依次为
+
+<img src="/Users/wangyifeng/Desktop/学习/人工智能基础算法/hw/hw4/Homework4/task2/Single Linkage Dendrogram (1 to 100 clusters).png" alt="Single Linkage Dendrogram (1 to 100 clusters)" style="zoom:67%;" />
+
+<img src="/Users/wangyifeng/Desktop/学习/人工智能基础算法/hw/hw4/Homework4/task2/Complete Linkage Dendrogram (1 to 100 clusters).png" alt="Complete Linkage Dendrogram (1 to 100 clusters)" style="zoom:67%;" />
+
+<img src="/Users/wangyifeng/Desktop/学习/人工智能基础算法/hw/hw4/Homework4/task2/Average Linkage Dendrogram (1 to 100 clusters).png" alt="Average Linkage Dendrogram (1 to 100 clusters)" style="zoom:67%;" />
