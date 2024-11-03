@@ -2,7 +2,8 @@ import pickle
 import numpy as np
 import time
 import matplotlib.pyplot as plt
-
+from sklearn.metrics import silhouette_score
+import os
 
 # 打开.pkl文件并加载数据
 with open('./mnist_clustering_dataset.pkl', 'rb') as file:
@@ -45,7 +46,7 @@ def k_means(X, K, max_iters=100):
     return centroids, labels, cost
 
 def visualize_and_save_all_centroids(centroids_list, K, save_dir):
-    import os
+
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     num_inits = len(centroids_list)
@@ -76,7 +77,8 @@ for K in K_values:
     results[K] = {
         'costs': [],
         'times': [],
-        'centroids': []
+        'centroids': [],
+        'silhouette_scores': []
     }
 
     for init in range(num_init):
@@ -89,11 +91,16 @@ for K in K_values:
         results[K]['costs'].append(cost)
         results[K]['times'].append(elapsed_time)
         results[K]['centroids'].append(centroids)
+
+        # 计算轮廓系数
+        silhouette = silhouette_score(data.reshape(data.shape[0], -1), labels)
+        results[K]['silhouette_scores'].append(silhouette)
         
         # 报告每次实验的结果
         print(f"K={K}, 初始化 {init+1}/{num_init}:")
         print(f"  费用函数值: {cost:.4f}")
         print(f"  计算时间: {elapsed_time:.4f} 秒")
+        print(f"  轮廓系数: {silhouette:.4f}")
         
     # 可视化并保存所有初始化的簇中心
     visualize_and_save_all_centroids(results[K]['centroids'], K, "task1")
@@ -103,9 +110,40 @@ for K in K_values:
 for K in K_values:
     avg_cost = np.mean(results[K]['costs'])
     avg_time = np.mean(results[K]['times'])
+    avg_silhouette = np.mean(results[K]['silhouette_scores'])
     print(f"K={K} 的平均结果:")
     print(f"  平均费用函数值: {avg_cost:.4f}")
     print(f"  平均计算时间: {avg_time:.4f} 秒")
+    print(f"  平均轮廓系数: {avg_silhouette:.4f}")
+
+# 绘制轮廓系数随 K 值的变化图
+plt.figure(figsize=(10, 5))
+plt.plot(K_values, [np.mean(results[K]['silhouette_scores']) for K in K_values], marker='o')
+plt.title("Silhouette Score vs Number of Clusters (K)")
+plt.xlabel("Number of Clusters (K)")
+plt.ylabel("Silhouette Score")
+plt.savefig(os.path.join("task1", "silhouette_scores.png"))
+plt.close()
+
+# 绘制误差函数（费用函数值）随 K 值的变化图
+plt.figure(figsize=(10, 5))
+plt.plot(K_values, [np.mean(results[K]['costs']) for K in K_values], marker='o')
+plt.title("Cost Function vs Number of Clusters (K)")
+plt.xlabel("Number of Clusters (K)")
+plt.ylabel("Cost Function Value")
+plt.savefig(os.path.join("task1", "cost_function.png"))
+plt.close()
+
+# 绘制计算时间随 K 值的变化图
+plt.figure(figsize=(10, 5))
+plt.plot(K_values, [np.mean(results[K]['times']) for K in K_values], marker='o')
+plt.title("Computation Time vs Number of Clusters (K)")
+plt.xlabel("Number of Clusters (K)")
+plt.ylabel("Computation Time (seconds)")
+plt.savefig(os.path.join("task1", "computation_time.png"))
+plt.close()
+
+
 
 # # 输出结果
 # print("Centroids:")

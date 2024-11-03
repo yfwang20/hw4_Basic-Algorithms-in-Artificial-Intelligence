@@ -13,6 +13,7 @@ with open('./mnist_clustering_dataset.pkl', 'rb') as file:
 
 # 现在data变量包含了.pkl文件中的数据
 images = np.array(data)
+
 def compute_distance_matrix(X):
     """计算所有样本之间的两两距离矩阵"""
     n = X.shape[0]
@@ -126,7 +127,7 @@ def hierarchical_clustering(X, method='single', num_clusters=1):
         print(f"{method}：完成{(num - n) / n * 100:2f}% {num - n}/{n}，已花费: {end_time_1 - start_time_1:.4f} 秒")
     return linkage_info
 
-def plot_dendrogram(linkage_info, title, filename, save_dir = "task2"):
+def plot_dendrogram(linkage_info, title, filename, save_dir):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     
@@ -155,13 +156,13 @@ def plot_dendrogram(linkage_info, title, filename, save_dir = "task2"):
     plt.savefig(os.path.join(save_dir, filename))
     plt.close()
 
-def save_linkage_info(linkage_info, filename, save_dir = "task2"):
+def save_linkage_info(linkage_info, filename, save_dir):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     Z = np.array(linkage_info)
     np.save(os.path.join(save_dir, filename), Z)
 
-def plot_silhouette_scores(X, linkage_info, title, filename, save_dir = "task2"):
+def plot_silhouette_scores(X, linkage_info, title, filename, save_dir):
     X = X.reshape(X.shape[0], -1)
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
@@ -213,6 +214,6 @@ for method in methods:
         file.write(text)
     
     # 绘制从 1 簇到 100 簇的树状图
-    plot_dendrogram(linkage_info, f"{method.capitalize()} Linkage Dendrogram (1 to 100 clusters)", f"{method.capitalize()} Linkage Dendrogram (1 to 100 clusters).png", save_dir = save_dir)
-    save_linkage_info(linkage_info, f"{method.capitalize()} Linkage Info", save_dir = save_dir)
-    plot_silhouette_scores(data, linkage_info, f"{method.capitalize()} Silhouette Score vs Number of Clusters", f"{method.capitalize()} Silhouette Score vs Number of Clusters.png", save_dir = save_dir)
+    plot_dendrogram(linkage_info, f"{method.capitalize()} Linkage Dendrogram (1 to 100 clusters)", f"{method.capitalize()} Linkage Dendrogram (1 to 100 clusters).png", save_dir)
+    save_linkage_info(linkage_info, f"{method.capitalize()} Linkage Info",save_dir)
+    plot_silhouette_scores(data, linkage_info, f"{method.capitalize()} Silhouette Score vs Number of Clusters", f"{method.capitalize()} Silhouette Score vs Number of Clusters.png", save_dir)
